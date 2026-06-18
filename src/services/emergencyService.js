@@ -9,10 +9,10 @@
 
 import { createMockEmergency } from '../data/mockData';
 
-export async function createEmergency(type, customerLocation) {
+export async function createEmergency(type, customerLocation, selectedHospital) {
   // Simulate network delay
   await delay(500);
-  return createMockEmergency(type, customerLocation);
+  return createMockEmergency(type, customerLocation, selectedHospital);
 }
 
 export async function getEmergency(id) {

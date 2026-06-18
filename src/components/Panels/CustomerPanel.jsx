@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import useEmergencyStore from '../../store/useEmergencyStore';
 import { STATUS, EMERGENCY_TYPES, STATUS_MESSAGES } from '../../config/constants';
-import { formatTime } from '../../utils/helpers';
+import { formatTime, distanceBetween } from '../../utils/helpers';
 
 export default function CustomerPanel() {
   const status = useEmergencyStore((s) => s.status);
@@ -9,7 +9,12 @@ export default function CustomerPanel() {
   const dispatchedAmbulance = useEmergencyStore((s) => s.dispatchedAmbulance);
   const eta = useEmergencyStore((s) => s.eta);
   const routeDistance = useEmergencyStore((s) => s.routeDistance);
+  const hospitals = useEmergencyStore((s) => s.hospitals);
+  const selectedHospital = useEmergencyStore((s) => s.selectedHospital);
+  const customerLocation = useEmergencyStore((s) => s.customerLocation);
   const submitSOS = useEmergencyStore((s) => s.submitSOS);
+  const selectHospital = useEmergencyStore((s) => s.selectHospital);
+  const confirmBooking = useEmergencyStore((s) => s.confirmBooking);
   const resetDemo = useEmergencyStore((s) => s.resetDemo);
 
   const [selectedType, setSelectedType] = useState(null);
@@ -20,10 +25,23 @@ export default function CustomerPanel() {
     setShowForm(true);
   };
 
-  const handleSubmit = () => {
+  const handleSelectType = (typeId) => {
+    setSelectedType(typeId);
+  };
+
+  const handleProceedToHospital = () => {
     if (!selectedType) return;
     submitSOS(selectedType);
     setShowForm(false);
+  };
+
+  const handleSelectHospital = (hospital) => {
+    selectHospital(hospital);
+  };
+
+  const handleConfirmBooking = () => {
+    if (!selectedHospital) return;
+    confirmBooking();
   };
 
   const handleReset = () => {
@@ -48,7 +66,7 @@ export default function CustomerPanel() {
     <div className="panel customer-panel">
       <div className="panel-header">
         <h2>👤 Customer</h2>
-        <span className="panel-subtitle">Emergency Services</span>
+        <span className="panel-subtitle">Emergency Booking</span>
       </div>
 
       <div className="panel-body">
@@ -73,7 +91,7 @@ export default function CustomerPanel() {
                 <button
                   key={type.id}
                   className={`type-card ${selectedType === type.id ? 'selected' : ''}`}
-                  onClick={() => setSelectedType(type.id)}
+                  onClick={() => handleSelectType(type.id)}
                   style={{ '--type-color': type.color }}
                 >
                   <span className="type-icon">{type.icon}</span>
@@ -83,19 +101,68 @@ export default function CustomerPanel() {
             </div>
             <button
               className="submit-button"
-              onClick={handleSubmit}
+              onClick={handleProceedToHospital}
               disabled={!selectedType}
             >
-              Request Ambulance
+              Next — Select Hospital
             </button>
-            <button className="cancel-link" onClick={() => setShowForm(false)}>
+            <button className="cancel-link" onClick={() => { setShowForm(false); setSelectedType(null); }}>
               Cancel
             </button>
           </div>
         )}
 
-        {/* Status Timeline */}
-        {status !== STATUS.IDLE && (
+        {/* Hospital Selection */}
+        {status === STATUS.HOSPITAL_SELECT && (
+          <div className="hospital-select-section">
+            <h3>Select Hospital</h3>
+            <p className="hospital-select-hint">Choose a hospital from the list below</p>
+            <div className="hospital-list">
+              {hospitals.map((hospital) => {
+                const dist = distanceBetween(customerLocation, hospital).toFixed(1);
+                const isSelected = selectedHospital && selectedHospital.id === hospital.id;
+                return (
+                  <button
+                    key={hospital.id}
+                    className={`hospital-card ${isSelected ? 'selected' : ''}`}
+                    onClick={() => handleSelectHospital(hospital)}
+                  >
+                    <div className="hospital-card-top">
+                      <span className="hospital-card-icon">🏥</span>
+                      <div className="hospital-card-info">
+                        <span className="hospital-card-name">{hospital.name}</span>
+                        <span className="hospital-card-address">{hospital.address}</span>
+                      </div>
+                    </div>
+                    <div className="hospital-card-bottom">
+                      <span className="hospital-card-distance">📏 {dist} km</span>
+                      <span className="hospital-card-beds">🛏️ {hospital.beds} beds</span>
+                    </div>
+                    <div className="hospital-card-specialties">
+                      {hospital.specialties.slice(0, 3).map((s) => (
+                        <span key={s} className="specialty-tag">{s}</span>
+                      ))}
+                    </div>
+                    {isSelected && <div className="hospital-check">✓</div>}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              className="submit-button book-ambulance-btn"
+              onClick={handleConfirmBooking}
+              disabled={!selectedHospital}
+            >
+              🚑 Book Ambulance
+            </button>
+            <button className="cancel-link" onClick={handleReset}>
+              Cancel
+            </button>
+          </div>
+        )}
+
+        {/* Status Timeline — after booking */}
+        {(status === STATUS.REQUESTING || status === STATUS.DISPATCHED || status === STATUS.EN_ROUTE || status === STATUS.ARRIVED || status === STATUS.COMPLETED) && (
           <div className="status-section">
             <div className="status-message">
               <div className={`status-badge status-${status.toLowerCase()}`}>
@@ -109,6 +176,21 @@ export default function CustomerPanel() {
                 <span className="eta-label">ETA</span>
                 <span className="eta-value">{eta}</span>
                 {routeDistance && <span className="eta-distance">{routeDistance}</span>}
+              </div>
+            )}
+
+            {/* Hospital Info */}
+            {selectedHospital && (
+              <div className="info-card">
+                <h4>🏥 Hospital</h4>
+                <div className="info-row">
+                  <span>Name</span>
+                  <span>{selectedHospital.name}</span>
+                </div>
+                <div className="info-row">
+                  <span>Phone</span>
+                  <span>{selectedHospital.phone}</span>
+                </div>
               </div>
             )}
 

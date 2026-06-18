@@ -8,16 +8,24 @@ export default function RTOPanel() {
   const routeDistance = useEmergencyStore((s) => s.routeDistance);
   const eta = useEmergencyStore((s) => s.eta);
   const dispatchedAmbulance = useEmergencyStore((s) => s.dispatchedAmbulance);
+  const selectedHospital = useEmergencyStore((s) => s.selectedHospital);
   const acknowledgeCorridor = useEmergencyStore((s) => s.acknowledgeCorridor);
   const clearCorridorAction = useEmergencyStore((s) => s.clearCorridorAction);
 
   const isAlerted = corridorStatus !== CORRIDOR_STATUS.NONE && status !== STATUS.IDLE;
+  const isActive = status !== STATUS.IDLE && status !== STATUS.HOSPITAL_SELECT;
 
   return (
     <div className="panel rto-panel">
       <div className="panel-header">
-        <h2>🚦 RTO Control</h2>
-        <span className="panel-subtitle">Traffic Management</span>
+        <div className="rto-header-top">
+          <h2>🚦 RTO & Traffic</h2>
+          <div className={`traffic-indicator ${isActive ? 'active' : 'idle'}`}>
+            <span className="traffic-dot" />
+            <span>{isActive ? 'ACTIVE' : 'MONITORING'}</span>
+          </div>
+        </div>
+        <span className="panel-subtitle">Corridor Management</span>
       </div>
 
       <div className="panel-body">
@@ -66,6 +74,12 @@ export default function RTOPanel() {
                   <div className="info-row">
                     <span>🚑 Ambulance</span>
                     <span>{dispatchedAmbulance.vehicleNumber}</span>
+                  </div>
+                )}
+                {selectedHospital && (
+                  <div className="info-row">
+                    <span>🏥 Hospital</span>
+                    <span>{selectedHospital.name}</span>
                   </div>
                 )}
                 {routeDistance && (

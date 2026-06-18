@@ -1,6 +1,7 @@
 export const STATUS = {
   IDLE: 'IDLE',
   REQUESTING: 'REQUESTING',
+  HOSPITAL_SELECT: 'HOSPITAL_SELECT',
   DISPATCHED: 'DISPATCHED',
   EN_ROUTE: 'EN_ROUTE',
   ARRIVED: 'ARRIVED',
@@ -33,8 +34,8 @@ export const AMBULANCE_STATUS = {
 };
 
 export const MAP_CONFIG = {
-  defaultCenter: { lat: 28.6139, lng: 77.2090 }, // New Delhi
-  defaultZoom: 13,
+  defaultCenter: { lat: 19.0278, lng: 72.8558 }, // Matunga, Mumbai
+  defaultZoom: 14,
   mapId: 'acms-dark-map',
   animationSpeedMs: 80, // ms between waypoint steps
 };
@@ -56,7 +57,8 @@ export const COLORS = {
 
 export const STATUS_MESSAGES = {
   [STATUS.IDLE]: 'Ready — tap SOS to request an ambulance',
-  [STATUS.REQUESTING]: 'Finding nearest hospital...',
+  [STATUS.REQUESTING]: 'Select emergency type...',
+  [STATUS.HOSPITAL_SELECT]: 'Choose a hospital from the list...',
   [STATUS.DISPATCHED]: 'Ambulance dispatched! RTO notified.',
   [STATUS.EN_ROUTE]: 'Ambulance en route — corridor being cleared',
   [STATUS.ARRIVED]: 'Ambulance has arrived!',

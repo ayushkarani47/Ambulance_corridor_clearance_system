@@ -1,13 +1,10 @@
 import MapContainer from './components/Map/MapContainer';
 import CustomerPanel from './components/Panels/CustomerPanel';
-import HospitalPanel from './components/Panels/HospitalPanel';
 import RTOPanel from './components/Panels/RTOPanel';
-import RoleSwitcher from './components/RoleSwitcher';
 import StatusBar from './components/StatusBar';
 import useEmergencyStore from './store/useEmergencyStore';
 
 function App() {
-  const currentRole = useEmergencyStore((s) => s.currentRole);
   const resetDemo = useEmergencyStore((s) => s.resetDemo);
 
   return (
@@ -17,27 +14,32 @@ function App() {
         <div className="app-brand">
           <span className="brand-icon">🚑</span>
           <h1 className="brand-title">ACMS</h1>
-          <span className="brand-subtitle">Ambulance Corridor Management</span>
+          <span className="brand-subtitle">Ambulance Corridor Clearance System</span>
         </div>
-        <RoleSwitcher />
-        <button className="reset-btn" onClick={resetDemo} title="Reset Demo">
-          🔄
-        </button>
+        <div className="header-right">
+          <span className="header-location">📍 Matunga, Mumbai</span>
+          <button className="reset-btn" onClick={resetDemo} title="Reset Demo">
+            🔄
+          </button>
+        </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main Content — Three Column Layout */}
       <main className="app-main">
-        {/* Side Panel */}
-        <aside className="side-panel">
-          {currentRole === 'customer' && <CustomerPanel />}
-          {currentRole === 'hospital' && <HospitalPanel />}
-          {currentRole === 'rto' && <RTOPanel />}
+        {/* Left Panel — Customer Booking */}
+        <aside className="side-panel left-panel">
+          <CustomerPanel />
         </aside>
 
-        {/* Map */}
+        {/* Center — Map */}
         <section className="map-section">
           <MapContainer />
         </section>
+
+        {/* Right Panel — RTO & Traffic */}
+        <aside className="side-panel right-panel">
+          <RTOPanel />
+        </aside>
       </main>
 
       {/* Status Bar */}

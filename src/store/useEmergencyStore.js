@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { STATUS, CORRIDOR_STATUS, MAP_CONFIG } from '../config/constants';
-import { CUSTOMER_LOCATION, HOSPITAL_LOCATION, RTO_OFFICERS, AMBULANCES } from '../data/mockData';
+import { CUSTOMER_LOCATION, HOSPITALS, RTO_OFFICERS, AMBULANCES } from '../data/mockData';
 import { fetchRoute } from '../services/routeService';
 import { createEmergency } from '../services/emergencyService';
 import { dispatchAmbulance, resetFleet } from '../services/ambulanceService';
@@ -14,7 +14,8 @@ const useEmergencyStore = create((set, get) => ({
 
   // Locations
   customerLocation: CUSTOMER_LOCATION,
-  hospitalLocation: HOSPITAL_LOCATION,
+  hospitals: HOSPITALS,
+  selectedHospital: null,
   rtoOfficers: RTO_OFFICERS,
   ambulances: AMBULANCES,
 
@@ -40,48 +41,47 @@ const useEmergencyStore = create((set, get) => ({
   // ETA
   eta: '',
 
-  // Active role tab
-  currentRole: 'customer',
-
   // Notification badges
   notifications: { customer: 0, hospital: 0, rto: 0 },
 
   // --- Actions ---
-  setRole: (role) => set({ currentRole: role }),
 
-  // Step 1: Customer submits SOS
+  // Step 1: Customer presses SOS → show emergency type form
   submitSOS: async (emergencyType) => {
-    set({ status: STATUS.REQUESTING, selectedEmergencyType: emergencyType });
-
-    const { customerLocation } = get();
-    const emergency = await createEmergency(emergencyType, customerLocation);
-
     set({
-      emergency,
-      status: STATUS.REQUESTING,
-      notifications: { ...get().notifications, hospital: 1 },
+      status: STATUS.HOSPITAL_SELECT,
+      selectedEmergencyType: emergencyType,
     });
   },
 
-  // Step 2: Hospital dispatches an ambulance
-  dispatchAmbulanceAction: async (ambulanceId) => {
-    const { emergency, hospitalLocation, customerLocation } = get();
-    if (!emergency) return;
+  // Step 2: Customer selects a hospital
+  selectHospital: (hospital) => {
+    set({ selectedHospital: hospital });
+  },
 
-    const dispatched = await dispatchAmbulance(ambulanceId, emergency.id);
+  // Step 3: Customer confirms booking → auto dispatch
+  confirmBooking: async () => {
+    const { selectedEmergencyType, customerLocation, selectedHospital, ambulances } = get();
+    if (!selectedHospital || !selectedEmergencyType) return;
+
+    // Create emergency
+    const emergency = await createEmergency(selectedEmergencyType, customerLocation, selectedHospital);
+    set({ emergency, status: STATUS.REQUESTING });
+
+    // Auto-select first available ambulance and dispatch
+    const availableAmbulance = ambulances.find((a) => a.status === 'AVAILABLE');
+    if (!availableAmbulance) return;
+
+    const dispatched = await dispatchAmbulance(availableAmbulance.id, emergency.id);
     if (!dispatched) return;
 
     set({
       dispatchedAmbulance: dispatched,
-      ambulancePosition: { ...hospitalLocation },
+      ambulancePosition: { lat: selectedHospital.lat, lng: selectedHospital.lng },
       status: STATUS.DISPATCHED,
-      notifications: { ...get().notifications, hospital: 0, rto: 1 },
+      notifications: { ...get().notifications, rto: 1 },
+      routePath: [], // will be set by MapContainer when it fetches the route
     });
-
-    // Fetch real route from Google Directions API
-    // We need the google maps instance - we'll get it from the component
-    // For now, store that route needs to be fetched
-    set({ routePath: [] }); // will be set by MapContainer when it fetches the route
   },
 
   // Called by MapContainer after fetching route from Directions API
@@ -102,7 +102,7 @@ const useEmergencyStore = create((set, get) => ({
     });
   },
 
-  // Step 3: RTO acknowledges
+  // RTO acknowledges
   acknowledgeCorridor: () => {
     set({
       corridorStatus: CORRIDOR_STATUS.ACKNOWLEDGED,
@@ -110,7 +110,7 @@ const useEmergencyStore = create((set, get) => ({
     });
   },
 
-  // Step 4: RTO clears corridor
+  // RTO clears corridor
   clearCorridorAction: () => {
     set({
       corridorStatus: CORRIDOR_STATUS.CLEARED,
@@ -176,6 +176,7 @@ const useEmergencyStore = create((set, get) => ({
       status: STATUS.IDLE,
       emergency: null,
       selectedEmergencyType: null,
+      selectedHospital: null,
       dispatchedAmbulance: null,
       ambulancePosition: null,
       routePath: [],

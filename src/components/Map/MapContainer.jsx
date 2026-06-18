@@ -1,11 +1,11 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { APIProvider, Map, useMap } from '@vis.gl/react-google-maps';
 import { MAP_CONFIG, STATUS, CORRIDOR_STATUS, COLORS } from '../../config/constants';
 import useEmergencyStore from '../../store/useEmergencyStore';
 import { fetchRoute } from '../../services/routeService';
 import { createCorridorPolygon } from '../../utils/animation';
 import CustomerMarker from './CustomerMarker';
-import HospitalMarker from './HospitalMarker';
+import HospitalMarkers from './HospitalMarker';
 import OfficerMarkers from './OfficerMarkers';
 import AmbulanceMarker from './AmbulanceMarker';
 
@@ -19,18 +19,19 @@ function MapInner() {
   const status = useEmergencyStore((s) => s.status);
   const routePath = useEmergencyStore((s) => s.routePath);
   const corridorStatus = useEmergencyStore((s) => s.corridorStatus);
-  const hospitalLocation = useEmergencyStore((s) => s.hospitalLocation);
+  const selectedHospital = useEmergencyStore((s) => s.selectedHospital);
   const customerLocation = useEmergencyStore((s) => s.customerLocation);
   const setRoute = useEmergencyStore((s) => s.setRoute);
 
   // Fetch route when ambulance is dispatched
   useEffect(() => {
-    if (status === STATUS.DISPATCHED && map && routePath.length === 0) {
-      fetchRoute(map, hospitalLocation, customerLocation).then((routeData) => {
+    if (status === STATUS.DISPATCHED && map && routePath.length === 0 && selectedHospital) {
+      const hospitalCoords = { lat: selectedHospital.lat, lng: selectedHospital.lng };
+      fetchRoute(map, hospitalCoords, customerLocation).then((routeData) => {
         setRoute(routeData);
       });
     }
-  }, [status, map, routePath.length, hospitalLocation, customerLocation, setRoute]);
+  }, [status, map, routePath.length, selectedHospital, customerLocation, setRoute]);
 
   // Draw route polyline
   useEffect(() => {
@@ -54,7 +55,9 @@ function MapInner() {
     const bounds = new window.google.maps.LatLngBounds();
     routePath.forEach((p) => bounds.extend(p));
     bounds.extend(customerLocation);
-    bounds.extend(hospitalLocation);
+    if (selectedHospital) {
+      bounds.extend({ lat: selectedHospital.lat, lng: selectedHospital.lng });
+    }
     map.fitBounds(bounds, { padding: 80 });
 
     return () => {
@@ -62,7 +65,7 @@ function MapInner() {
         routePolylineRef.current.setMap(null);
       }
     };
-  }, [map, routePath, customerLocation, hospitalLocation]);
+  }, [map, routePath, customerLocation, selectedHospital]);
 
   // Draw corridor overlay
   useEffect(() => {
@@ -113,7 +116,7 @@ function MapInner() {
   return (
     <>
       <CustomerMarker />
-      <HospitalMarker />
+      <HospitalMarkers />
       <OfficerMarkers />
       <AmbulanceMarker />
     </>
@@ -121,13 +124,11 @@ function MapInner() {
 }
 
 export default function MapContainer() {
-  const customerLocation = useEmergencyStore((s) => s.customerLocation);
-
   return (
     <div className="map-container">
       <APIProvider apiKey={API_KEY}>
         <Map
-          defaultCenter={customerLocation}
+          defaultCenter={MAP_CONFIG.defaultCenter}
           defaultZoom={MAP_CONFIG.defaultZoom}
           mapId={MAP_CONFIG.mapId}
           gestureHandling="greedy"

@@ -8,7 +8,7 @@ import { CUSTOMER_LOCATION } from '../data/mockData';
 
 /**
  * Get the current user's location via browser Geolocation API.
- * Falls back to mock Delhi location if permission denied or unavailable.
+ * Falls back to mock Matunga, Mumbai location if permission denied or unavailable.
  */
 export async function getCurrentPosition() {
   return new Promise((resolve) => {

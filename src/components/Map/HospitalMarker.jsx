@@ -1,15 +1,28 @@
 import { AdvancedMarker } from '@vis.gl/react-google-maps';
 import useEmergencyStore from '../../store/useEmergencyStore';
 
-export default function HospitalMarker() {
-  const hospitalLocation = useEmergencyStore((s) => s.hospitalLocation);
+export default function HospitalMarkers() {
+  const hospitals = useEmergencyStore((s) => s.hospitals);
+  const selectedHospital = useEmergencyStore((s) => s.selectedHospital);
 
   return (
-    <AdvancedMarker position={hospitalLocation} title={hospitalLocation.name}>
-      <div className="hospital-marker">
-        <span>🏥</span>
-        <div className="marker-label">{hospitalLocation.name}</div>
-      </div>
-    </AdvancedMarker>
+    <>
+      {hospitals.map((hospital) => {
+        const isSelected = selectedHospital && selectedHospital.id === hospital.id;
+        return (
+          <AdvancedMarker
+            key={hospital.id}
+            position={{ lat: hospital.lat, lng: hospital.lng }}
+            title={hospital.name}
+          >
+            <div className={`hospital-marker ${isSelected ? 'selected' : ''}`}>
+              <span>{isSelected ? '🏥' : '🏥'}</span>
+              <div className="marker-label">{hospital.name}</div>
+              {isSelected && <div className="hospital-marker-glow" />}
+            </div>
+          </AdvancedMarker>
+        );
+      })}
+    </>
   );
 }

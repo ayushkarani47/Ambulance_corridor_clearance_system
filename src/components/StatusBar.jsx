@@ -22,10 +22,10 @@ export default function StatusBar() {
           <span className="status-text">{STATUS_MESSAGES[status]}</span>
         </div>
         <div className="status-bar-right">
-          {eta && status !== STATUS.IDLE && status !== STATUS.COMPLETED && (
+          {eta && status !== STATUS.IDLE && status !== STATUS.COMPLETED && status !== STATUS.HOSPITAL_SELECT && (
             <span className="status-eta">⏱️ {eta}</span>
           )}
-          {routeDistance && status !== STATUS.IDLE && (
+          {routeDistance && status !== STATUS.IDLE && status !== STATUS.HOSPITAL_SELECT && (
             <span className="status-distance">📏 {routeDistance}</span>
           )}
         </div>
